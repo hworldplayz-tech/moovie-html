@@ -1,0 +1,6 @@
+{
+  "name": "CineStream - Movies & TV Series",
+  "description": "Ultra-fast, high-performance movie and TV series streaming and download hub with instant search, multi-server player, and offline caching.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
