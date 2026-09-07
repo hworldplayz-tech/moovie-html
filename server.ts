@@ -411,9 +411,9 @@ async function startServer() {
     ];
 
     res.json({
-      siteName: "CineStream",
+      siteName: "Moovie",
       tagline: "Live 4K Movies & TV Series Stream & Download Hub",
-      logoText: "CINESTREAM",
+      logoText: "MOOVIE",
       accentColor: "#10B981", // Emerald Green
       accentHover: "#059669",
       theme: {
@@ -452,7 +452,7 @@ async function startServer() {
       const qId = String(req.query.id);
       const item = LIVE_CATALOG.find(m => m.id === qId || m.tmdbId === qId || m.id === `tmdb-${qId}`);
       if (!item) {
-        return res.status(404).json({ error: "Title not found in CineStream live database" });
+        return res.status(404).json({ error: "Title not found in Moovie live database" });
       }
       const related = LIVE_CATALOG.filter(
         m => m.id !== item.id && m.genres.some(g => item.genres.includes(g))
@@ -549,7 +549,7 @@ async function startServer() {
     const { id } = req.params;
     const item = LIVE_CATALOG.find(m => m.id === id || m.tmdbId === id);
     if (!item) {
-      return res.status(404).json({ error: "Title not found in CineStream live database" });
+      return res.status(404).json({ error: "Title not found in Moovie live database" });
     }
 
     // Find related items by matching genres
@@ -624,7 +624,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`CineStream Live Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Moovie Live Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

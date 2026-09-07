@@ -5,6 +5,7 @@
  * Emerald Green & Crisp White Cinema Architecture • Zero Runtime Bloat • SWR Caching
  */
 import './styles.css';
+import { INITIAL_CATALOG } from './data/catalog';
 
 // Types & Interfaces
 export interface DownloadLink {
@@ -109,49 +110,151 @@ const state = {
 // ============================================================================
 // Live Backend Integration & Stale-While-Revalidate (SWR) Offline Cache Layer
 // ============================================================================
-const SWR_PREFIX = 'cinestream_swr_live_';
-const LIVE_BACKEND_API = 'https://ais-dev-n2abl3ldtshzzubxhzix7d-738539506882.asia-southeast1.run.app/api/content';
+const SWR_PREFIX = 'moovie_swr_live_';
 
 /**
- * Fetch from the live backend with automatic local server fallback.
- * Maps queries according to live backend specification:
- * - Catalog: /api/content?page=1&limit=24
- * - Single Details: /api/content?id={id}
- * - Instant Search: /api/content?q={query}
+ * Local verified catalog fallback handler.
+ * Guarantees that movies, TV shows, details, and search always work seamlessly
+ * even when the remote API or server is unreachable, on static Vercel, or offline.
+ */
+function getLocalCatalogResponse<T>(endpoint: string): T {
+  // 1. Single item by id: /api/content/:id
+  if (endpoint.startsWith('/api/content/')) {
+    const rawId = decodeURIComponent(endpoint.replace('/api/content/', '').split('?')[0]);
+    const item = INITIAL_CATALOG.find(m => m.id === rawId || m.tmdbId === rawId || m.id === `tmdb-${rawId}`) || INITIAL_CATALOG[0];
+    const related = INITIAL_CATALOG
+      .filter(m => m.id !== item.id && m.genres.some(g => item.genres.includes(g)))
+      .slice(0, 8)
+      .map(m => ({
+        id: m.id,
+        title: m.title,
+        type: m.type,
+        year: m.year,
+        rating: m.rating,
+        quality: m.quality,
+        poster: m.poster,
+        duration: m.duration,
+        genres: m.genres
+      }));
+    return { ...item, related } as unknown as T;
+  }
+
+  const queryStr = endpoint.includes('?') ? endpoint.split('?')[1] : '';
+  const params = new URLSearchParams(queryStr);
+
+  // 2. Single item by id query: /api/content?id=...
+  if (params.has('id')) {
+    const rawId = params.get('id')!;
+    const item = INITIAL_CATALOG.find(m => m.id === rawId || m.tmdbId === rawId || m.id === `tmdb-${rawId}`) || INITIAL_CATALOG[0];
+    const related = INITIAL_CATALOG
+      .filter(m => m.id !== item.id && m.genres.some(g => item.genres.includes(g)))
+      .slice(0, 8)
+      .map(m => ({
+        id: m.id,
+        title: m.title,
+        type: m.type,
+        year: m.year,
+        rating: m.rating,
+        quality: m.quality,
+        poster: m.poster,
+        duration: m.duration,
+        genres: m.genres
+      }));
+    return { ...item, related } as unknown as T;
+  }
+
+  // 3. Search query: /api/content?q=... or /api/search?q=...
+  if (params.has('q')) {
+    const q = (params.get('q') || '').trim().toLowerCase();
+    if (!q) {
+      return { query: '', results: [] } as unknown as T;
+    }
+    const results = INITIAL_CATALOG.filter(item => {
+      const titleMatch = item.title.toLowerCase().includes(q);
+      const genreMatch = item.genres.some(g => g.toLowerCase().includes(q));
+      const yearMatch = String(item.year).includes(q);
+      const castMatch = item.cast?.some(c => c.toLowerCase().includes(q));
+      return titleMatch || genreMatch || yearMatch || castMatch;
+    }).slice(0, 24);
+    return { query: q, results } as unknown as T;
+  }
+
+  // 4. Catalog query: /api/content?page=1&limit=24&type=...&genre=...&sort=...
+  const type = params.get('type') || 'all';
+  const genre = params.get('genre') || 'all';
+  const sort = params.get('sort') || 'newest';
+  const page = Math.max(1, parseInt(params.get('page') || '1', 10));
+  const limit = Math.max(1, parseInt(params.get('limit') || '24', 10));
+  const trendingOnly = params.get('trending') === 'true';
+  const featuredOnly = params.get('featured') === 'true';
+
+  let filtered = [...INITIAL_CATALOG];
+
+  if (featuredOnly) {
+    filtered = filtered.filter(item => item.featured || item.rating >= 8.0).slice(0, 10);
+    return { items: filtered, total: filtered.length, hasMore: false } as unknown as T;
+  }
+
+  if (trendingOnly) {
+    filtered = filtered.filter(item => item.trending || item.rating >= 7.5);
+  }
+
+  if (type && type !== 'all') {
+    filtered = filtered.filter(item => item.type === type);
+  }
+
+  if (genre && genre.toLowerCase() !== 'all') {
+    filtered = filtered.filter(item => item.genres.some(g => g.toLowerCase() === genre.toLowerCase()));
+  }
+
+  // Sorting
+  if (sort === 'rating') {
+    filtered.sort((a, b) => b.rating - a.rating);
+  } else if (sort === 'title') {
+    filtered.sort((a, b) => a.title.localeCompare(b.title));
+  } else {
+    // Newest
+    filtered.sort((a, b) => b.year - a.year || b.rating - a.rating);
+  }
+
+  const total = filtered.length;
+  const start = (page - 1) * limit;
+  const items = filtered.slice(start, start + limit);
+  const hasMore = start + limit < total;
+
+  return { items, total, hasMore } as unknown as T;
+}
+
+/**
+ * Fetch with automatic local fallback to ensure movies are ALWAYS displayed.
  */
 async function fetchFromLiveBackend<T>(endpoint: string): Promise<T> {
-  let remoteUrl: string;
-
-  if (endpoint.startsWith('/api/content/')) {
-    const id = endpoint.replace('/api/content/', '');
-    remoteUrl = `${LIVE_BACKEND_API}?id=${encodeURIComponent(id)}`;
-  } else if (endpoint.startsWith('/api/content?')) {
-    remoteUrl = `${LIVE_BACKEND_API}?${endpoint.slice('/api/content?'.length)}`;
-  } else if (endpoint.startsWith('/api/search?')) {
-    remoteUrl = `${LIVE_BACKEND_API}?${endpoint.slice('/api/search?'.length)}`;
-  } else {
-    remoteUrl = endpoint;
-  }
-
-  // 1. Try remote live backend first
+  // 1. Try local server first
   try {
-    const remoteRes = await fetch(remoteUrl, {
-      headers: { Accept: 'application/json' },
-      credentials: 'include'
-    });
-    const contentType = remoteRes.headers.get('content-type') || '';
-    if (remoteRes.ok && contentType.includes('application/json')) {
-      return (await remoteRes.json()) as T;
-    }
-    throw new Error(`Remote HTTP ${remoteRes.status} ${contentType}`);
-  } catch (err) {
-    // 2. Seamless local fallback
-    const localRes = await fetch(endpoint, {
+    const res = await fetch(endpoint, {
       headers: { Accept: 'application/json' }
     });
-    if (!localRes.ok) throw new Error(`Local fallback HTTP ${localRes.status}`);
-    return (await localRes.json()) as T;
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = (await res.json()) as T;
+        // Verify data isn't an empty item set on initial page
+        const anyData = data as any;
+        if (anyData && Array.isArray(anyData.items)) {
+          if (anyData.items.length > 0 || anyData.total > 0) {
+            return data;
+          }
+        } else if (anyData && (anyData.title || anyData.id || Array.isArray(anyData.results))) {
+          return data;
+        }
+      }
+    }
+  } catch (err) {
+    // Network / offline / static host
   }
+
+  // 2. Immediate fallback to verified local catalog
+  return getLocalCatalogResponse<T>(endpoint);
 }
 
 async function fetchWithSWR<T>(url: string, onData: (data: T, fromCache: boolean) => void): Promise<T | null> {
@@ -168,7 +271,7 @@ async function fetchWithSWR<T>(url: string, onData: (data: T, fromCache: boolean
     console.warn('Cache read error:', e);
   }
 
-  // 2. Fresh network fetch (Live Backend API + local fallback)
+  // 2. Fresh fetch with guaranteed catalog fallback
   try {
     const freshData = await fetchFromLiveBackend<T>(url);
     
@@ -182,9 +285,11 @@ async function fetchWithSWR<T>(url: string, onData: (data: T, fromCache: boolean
     onData(freshData, false);
     return freshData;
   } catch (error) {
-    console.warn(`Network fetch failed for ${url}, fallback to cached:`, error);
-    updateNetworkStatus(false);
-    return null;
+    console.warn(`Fetch fallback for ${url}:`, error);
+    // Absolute fallback directly from local catalog
+    const localFallback = getLocalCatalogResponse<T>(url);
+    onData(localFallback, false);
+    return localFallback;
   }
 }
 
@@ -234,11 +339,11 @@ function updateNetworkStatus(online: boolean) {
 // ============================================================================
 // Bookmarks / Watch Later State (LocalStorage)
 // ============================================================================
-const BOOKMARKS_KEY = 'cinestream_live_bookmarks';
+const BOOKMARKS_KEY = 'moovie_live_bookmarks';
 
 function loadBookmarks() {
   try {
-    const stored = localStorage.getItem(BOOKMARKS_KEY);
+    const stored = localStorage.getItem(BOOKMARKS_KEY) || localStorage.getItem('cinestream_live_bookmarks');
     if (stored) {
       const arr = JSON.parse(stored);
       state.bookmarks = new Set(arr);
@@ -557,17 +662,17 @@ function renderContentGrid(isAppend: boolean) {
       <div class="card-thumb-wrap">
         <img
           data-src="${item.poster}"
-          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 3'%3E%3Crect width='2' height='3' fill='%23141f1a'/%3E%3C/svg%3E"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 3'%3E%3Crect width='2' height='3' fill='%23e2e8f0'/%3E%3C/svg%3E"
           alt="${item.title}"
           class="card-poster lazy-img"
           loading="lazy"
         />
-        <div class="card-badge-rating">
+        <div class="card-badge-rating" title="Rating: ${item.rating.toFixed(1)}/10">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
           <span>${item.rating.toFixed(1)}</span>
         </div>
         <span class="card-badge-quality">${item.quality}</span>
-        <span class="card-type-pill">${item.type === 'tv' ? 'TV Series' : 'Movie'}</span>
+        <span class="card-type-pill">${item.type === 'tv' ? 'TV' : 'Movie'}</span>
 
         <div class="card-hover-overlay">
           <button class="play-circle-btn" data-action="watch" aria-label="Watch ${item.title}">
@@ -587,11 +692,11 @@ function renderContentGrid(isAppend: boolean) {
       <div class="card-info">
         <h3 class="card-title" title="${item.title}">${item.title}</h3>
         <div class="card-meta">
-          <span>${item.year}</span>
-          <span>•</span>
-          <span>${item.duration}</span>
-          <span>•</span>
-          <span style="color: var(--accent-emerald);">${item.genres[0] || 'Drama'}</span>
+          <span class="card-meta-year">${item.year}</span>
+          <span class="card-meta-dot">•</span>
+          <span class="card-meta-duration">${item.duration}</span>
+          <span class="card-meta-dot">•</span>
+          <span class="card-genre-tag">${item.genres[0] || 'Drama'}</span>
         </div>
       </div>
     `;
@@ -651,6 +756,15 @@ function setupFilters() {
       navTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       state.filter.type = tab.dataset.type || 'all';
+      
+      const heading = document.getElementById('catalog-heading');
+      if (heading) {
+        if (state.filter.type === 'movie') heading.textContent = 'Movies';
+        else if (state.filter.type === 'tv') heading.textContent = 'TV Shows';
+        else if (state.filter.type === 'trending') heading.textContent = '🔥 Trending Now';
+        else heading.textContent = 'All Movies';
+      }
+      
       loadContent();
     });
   });
@@ -1463,7 +1577,7 @@ function setupInstantSearch() {
     if (!results.length) {
       resultsList.innerHTML = `
         <div class="search-empty-state">
-          Type title, year, or genre to instantly search 7,700+ titles in the CineStream live catalog...
+          Type title, year, or genre to instantly search 7,700+ titles in the Moovie live catalog...
         </div>
       `;
       return;
@@ -1632,9 +1746,76 @@ function setupHeaderScroll() {
 }
 
 // ============================================================================
+// Theme Manager (Light Theme Default with Dark / Light Switcher)
+// ============================================================================
+const THEME_STORAGE_KEY = 'moovie_theme';
+
+function setupThemeToggle() {
+  const saved = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+  applyTheme(saved === 'dark' ? 'dark' : 'light', false);
+
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const target = current === 'dark' ? 'light' : 'dark';
+      applyTheme(target, true);
+    });
+  }
+}
+
+function applyTheme(theme: 'light' | 'dark', showFeedback = false) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+
+  const iconContainer = document.getElementById('theme-toggle-icon');
+  const labelText = document.getElementById('theme-toggle-text');
+
+  if (iconContainer) {
+    if (theme === 'dark') {
+      // In dark mode, show Sun icon for switching back to light mode
+      iconContainer.innerHTML = `
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      `;
+    } else {
+      // In light mode, show Moon icon for switching to dark mode
+      iconContainer.innerHTML = `
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      `;
+    }
+  }
+
+  if (labelText) {
+    labelText.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+  }
+
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute('content', theme === 'dark' ? '#090d0b' : '#10b981');
+  }
+
+  if (showFeedback) {
+    showToast(`Switched to ${theme === 'dark' ? 'Dark Cinema' : 'Light Mode'}`, 'info');
+  }
+}
+
+// ============================================================================
 // Application Bootstrap
 // ============================================================================
 async function initApp() {
+  setupThemeToggle();
   setupHeaderScroll();
   setupNetworkTracker();
   loadBookmarks();

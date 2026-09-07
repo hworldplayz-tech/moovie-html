@@ -1,268 +1,2860 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CineStream - Movies & TV Series</title>
-    <meta name="description" content="Ultra-fast, high-performance movie and TV series streaming and download hub with instant search, multi-server player, and offline caching." />
-    <meta property="og:title" content="CineStream - Movies & TV Series" />
-    <meta property="og:description" content="Ultra-fast, high-performance movie and TV series streaming and download hub with instant search, multi-server player, and offline caching." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#090d0b" />
-    <link rel="stylesheet" href="/src/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout" id="app">
-      
-      <!-- Sticky Top Navigation Bar -->
-      <header id="site-header" class="site-header">
-        <div class="header-inner">
-          <a href="#" class="brand" id="brand-logo" aria-label="CineStream Home">
-            <div class="brand-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                <line x1="7" y1="2" x2="7" y2="22"></line>
-                <line x1="17" y1="2" x2="17" y2="22"></line>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <line x1="2" y1="7" x2="7" y2="7"></line>
-                <line x1="2" y1="17" x2="7" y2="17"></line>
-                <line x1="17" y1="17" x2="22" y2="17"></line>
-                <line x1="17" y1="7" x2="22" y2="7"></line>
-              </svg>
-            </div>
-            <span class="brand-text">CINE<span>STREAM</span></span>
-          </a>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moovie - Movies, TV Series & Anime Streaming Hub</title>
+  <meta name="description" content="Ultra-fast multi-server streaming and download web application powered by TMDB, AniList, and high-speed embed gateways." />
+  <link rel="preconnect" href="https://image.tmdb.org" />
+  <link rel="preconnect" href="https://graphql.anilist.co" />
 
-          <!-- Center Navigation Tabs -->
-          <nav class="nav-tabs" id="main-nav" aria-label="Main Navigation">
-            <button class="nav-tab-btn active" data-type="all">All Catalog</button>
-            <button class="nav-tab-btn" data-type="movie">Movies</button>
-            <button class="nav-tab-btn" data-type="tv">TV Shows</button>
-            <button class="nav-tab-btn" data-type="trending">🔥 Trending</button>
-          </nav>
+  <style>
+    :root {
+      --bg-base: #020617;
+      --bg-surface: #0b1329;
+      --bg-card: #0f172a;
+      --bg-card-hover: #1e293b;
+      --border-subtle: rgba(56, 189, 248, 0.15);
+      --border-focus: #38bdf8;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-cyan: #38bdf8;
+      --accent-blue: #3b82f6;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --accent-red: #ef4444;
+      --rating-amber: #f59e0b;
+      --badge-4k: #10b981;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --transition: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-          <!-- Right Action Controls -->
-          <div class="header-actions">
-            <!-- Search Trigger -->
-            <button class="search-trigger" id="search-trigger-btn" aria-label="Search movies and series">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <span>Quick Search...</span>
-              <span class="kbd-shortcut">Ctrl+K</span>
-            </button>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-            <!-- Bookmarks / Watch Later -->
-            <button class="action-btn" id="open-bookmarks-btn" aria-label="Open Watch Later">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <span>Watch Later</span>
-              <span class="bookmark-counter" id="bookmark-counter">0</span>
-            </button>
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
 
-            <!-- Real-time CDN / Offline Indicator -->
-            <div class="network-badge" id="network-status-badge" title="Stale-While-Revalidate Caching Active">
-              <span class="network-dot"></span>
-              <span id="network-status-text">Ultra CDN Online</span>
-            </div>
-          </div>
-        </div>
-      </header>
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-cyan);
+    }
 
-      <!-- Hero Spotlight Carousel -->
-      <section id="hero-section" class="hero-section" aria-label="Featured Spotlight">
-        <div class="carousel-viewport" id="carousel-viewport">
-          <!-- Populated dynamically via Vanilla JS -->
-        </div>
+    /* Top Sticky Header */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
 
-        <!-- Carousel Navigation Arrows & Indicators -->
-        <div class="carousel-controls">
-          <div class="carousel-dots" id="carousel-dots"></div>
-          <button class="carousel-btn" id="carousel-prev-btn" aria-label="Previous Slide">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="15 18 9 12 15 6"></polyline>
+    .header-inner {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 0.65rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 900;
+      font-size: 1.4rem;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .brand-logo span {
+      color: var(--accent-cyan);
+    }
+
+    /* Navigation Filter Tabs */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 0.25rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-subtle);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.4rem 0.95rem;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab-btn.active {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #ffffff;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Header Actions & Quick Selector */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .server-quick-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .server-quick-select {
+      background: transparent;
+      border: none;
+      color: var(--accent-cyan);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .server-quick-select option {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    /* Live Search Box */
+    .search-box-wrap {
+      position: relative;
+      width: 260px;
+      transition: width var(--transition);
+    }
+
+    .search-box-wrap:focus-within {
+      width: 340px;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 38px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 0 2.2rem 0 2.4rem;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 15px var(--accent-glow);
+      background: #0f172a;
+    }
+
+    .search-icon-left {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: none;
+      padding: 2px;
+    }
+
+    /* Autocomplete Dropdown */
+    .search-results-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: #0b1329;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+      max-height: 420px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1000;
+      backdrop-filter: blur(16px);
+    }
+
+    .search-results-dropdown.open {
+      display: block;
+    }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.85rem;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background var(--transition);
+    }
+
+    .search-result-item:hover, .search-result-item.highlight {
+      background: rgba(56, 189, 248, 0.12);
+    }
+
+    .search-item-thumb {
+      width: 36px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 4px;
+      background: #1e293b;
+      flex-shrink: 0;
+    }
+
+    .search-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-item-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-primary);
+    }
+
+    .search-item-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.15rem;
+    }
+
+    /* Header Action Icon Buttons */
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .icon-btn:hover {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .btn-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      background: var(--accent-cyan);
+      color: #020617;
+      font-size: 0.65rem;
+      font-weight: 800;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Hero Banner Spotlight */
+    .hero-banner {
+      position: relative;
+      width: 100%;
+      height: 580px;
+      overflow: hidden;
+      background: #020617;
+    }
+
+    .hero-backdrop {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+      filter: brightness(0.6) saturate(1.2);
+      transition: opacity 600ms ease, transform 1000ms ease;
+    }
+
+    .hero-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, #020617 0%, rgba(2, 6, 23, 0.7) 45%, rgba(2, 6, 23, 0.2) 100%),
+                  radial-gradient(circle at 75% 40%, transparent 20%, #020617 90%);
+    }
+
+    .hero-content {
+      position: relative;
+      max-width: 1520px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-bottom: 4.5rem;
+      z-index: 5;
+    }
+
+    .hero-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.85rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.02em;
+    }
+
+    .badge-rating {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--rating-amber);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .badge-quality {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--badge-4k);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .badge-cyan {
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .badge-genre {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hero-title {
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin-bottom: 0.85rem;
+      max-width: 820px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .hero-overview {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      max-width: 680px;
+      margin-bottom: 1.5rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    .hero-cta-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.7rem 1.6rem;
+      border-radius: var(--radius-pill);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 20px var(--accent-glow);
+      transition: var(--transition);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.55);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.7rem 1.4rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      background: rgba(30, 41, 59, 0.9);
+    }
+
+    .hero-slider-nav {
+      position: absolute;
+      right: 2rem;
+      bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+
+    .hero-nav-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .hero-nav-dot.active {
+      background: var(--accent-cyan);
+      transform: scale(1.3);
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+
+    /* Main Showcase Rows Section */
+    .main-content {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    .row-section {
+      position: relative;
+      width: 100%;
+    }
+
+    .row-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .row-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .row-title-icon {
+      font-size: 1.3rem;
+    }
+
+    .row-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .row-count-badge {
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 0.15rem 0.55rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .row-nav-btns {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .row-scroll-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .row-scroll-btn:hover {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      background: #0f172a;
+    }
+
+    /* Horizontal Cards Scroll Track */
+    .cards-row-track {
+      display: flex;
+      gap: 1.1rem;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      padding: 0.5rem 0.2rem 1.2rem;
+      scrollbar-width: none;
+    }
+    .cards-row-track::-webkit-scrollbar { display: none; }
+
+    /* Media Card */
+    .media-card {
+      flex: 0 0 190px;
+      position: relative;
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms, border-color 250ms;
+      user-select: none;
+    }
+
+    .media-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.2);
+      z-index: 10;
+    }
+
+    .card-poster-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      background: #0b1329;
+      overflow: hidden;
+    }
+
+    .card-poster {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 300ms ease;
+    }
+
+    .media-card:hover .card-poster {
+      transform: scale(1.05);
+    }
+
+    .card-rating-badge {
+      position: absolute;
+      top: 0.5rem;
+      left: 0.5rem;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(6px);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--rating-amber);
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .card-type-tag {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(56, 189, 248, 0.2);
+      backdrop-filter: blur(6px);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      text-transform: uppercase;
+    }
+
+    .card-hover-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(2, 6, 23, 0.95) 100%);
+      opacity: 0;
+      transition: opacity 200ms ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0.75rem;
+    }
+
+    .media-card:hover .card-hover-overlay {
+      opacity: 1;
+    }
+
+    .card-play-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 0.75rem;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .card-info {
+      padding: 0.75rem;
+    }
+
+    /* Card Watch Progress Indicator */
+    .card-progress-bar-wrap {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(15, 23, 42, 0.85);
+      z-index: 5;
+    }
+
+    .card-progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+      box-shadow: 0 0 6px var(--accent-cyan);
+      transition: width 300ms ease;
+    }
+
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .card-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Video Player Modal Interface */
+    .player-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .player-modal.open {
+      display: flex;
+    }
+
+    .player-container {
+      width: 100%;
+      max-width: 1240px;
+      background: #0b1329;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px var(--accent-glow);
+      display: flex;
+      flex-direction: column;
+      animation: modalPop 250ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Player Header Bar */
+    .player-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.25rem;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-subtle);
+      gap: 1rem;
+    }
+
+    .player-title-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
+    .player-title-text {
+      font-size: 1.15rem;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #ffffff;
+    }
+
+    .player-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .btn-switch-server-report {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-switch-server-report:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ffffff;
+    }
+
+    /* Ad-Shield Protection Toggle Button */
+    .btn-adshield {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      color: #34d399;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .btn-adshield:hover {
+      background: rgba(16, 185, 129, 0.28);
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-adshield.disabled {
+      background: rgba(148, 163, 184, 0.12);
+      border-color: rgba(148, 163, 184, 0.3);
+      color: var(--text-muted);
+    }
+
+    .btn-adshield.disabled:hover {
+      background: rgba(148, 163, 184, 0.2);
+      color: var(--text-secondary);
+      box-shadow: none;
+    }
+
+    .player-close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-secondary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .player-close-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red);
+    }
+
+    /* 16:9 Iframe Wrapper */
+    .player-viewport-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000000;
+    }
+
+    .player-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #000000;
+    }
+
+    .player-loading-shimmer {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      background: #020617;
+      z-index: 10;
+      transition: opacity 300ms ease;
+    }
+
+    .player-loading-shimmer.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(56, 189, 248, 0.2);
+      border-top-color: var(--accent-cyan);
+      border-radius: 50%;
+      animation: spin 800ms linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Multi-Server Switcher Bar */
+    .player-servers-bar {
+      padding: 0.75rem 1.25rem;
+      background: #091024;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .server-chips-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .server-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 0.2rem;
+    }
+
+    .server-chip-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .server-chip-btn:hover {
+      border-color: var(--accent-cyan);
+      color: var(--text-primary);
+    }
+
+    .server-chip-btn.active {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #ffffff;
+      border-color: transparent;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .server-sub-badge {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    /* TV Show Season & Episode Selectors */
+    .tv-controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.65rem 1.25rem;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+    }
+
+    .tv-picker-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .select-dropdown {
+      background: #0b1329;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .select-dropdown:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    /* Player Body Details & Downloads */
+    .player-details-row {
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 1.5rem;
+      background: #0b1329;
+    }
+
+    .player-thumb {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .player-meta-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .player-meta-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .player-synopsis {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .player-action-btns {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Settings & TMDB Modal */
+    .modal-dialog {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(12px);
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-dialog.open {
+      display: flex;
+    }
+
+    .dialog-box {
+      width: 100%;
+      max-width: 540px;
+      background: #0f172a;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 25px var(--accent-glow);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dialog-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .form-input {
+      background: #020617;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .form-help {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Toast Container */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 4000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      pointer-events: none;
+    }
+
+    .toast-item {
+      background: #0f172a;
+      border: 1px solid var(--accent-cyan);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px var(--accent-glow);
+      padding: 0.75rem 1.2rem;
+      border-radius: var(--radius-pill);
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: toastSlide 200ms ease;
+    }
+
+    @keyframes toastSlide {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 960px) {
+      .header-inner {
+        flex-wrap: wrap;
+      }
+      .nav-tabs {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .hero-banner {
+        height: 480px;
+      }
+      .hero-title {
+        font-size: 2.2rem;
+      }
+      .player-details-row {
+        grid-template-columns: 1fr;
+      }
+      .player-thumb {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .search-box-wrap {
+        width: 100%;
+      }
+      .search-box-wrap:focus-within {
+        width: 100%;
+      }
+      .hero-content {
+        padding: 0 1rem 3.5rem;
+      }
+      .media-card {
+        flex: 0 0 145px;
+      }
+      .player-modal {
+        padding: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Top Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <a href="#" class="brand-logo" id="brand-link">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
-          </button>
-          <button class="carousel-btn" id="carousel-next-btn" aria-label="Next Slide">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
-        </div>
-      </section>
-
-      <!-- Main Catalog & Filter Area -->
-      <main id="main-content" class="main-content">
-        
-        <!-- Filter and Sort Toolbar -->
-        <section class="filter-toolbar" aria-label="Filter Options">
-          <div class="filter-top-row">
-            <div class="section-heading-group">
-              <h2 class="section-title" id="catalog-heading">Explore Catalog</h2>
-              <span class="items-count-badge" id="items-count-badge">Loading titles...</span>
-            </div>
-
-            <div class="sort-select-wrapper">
-              <label for="sort-select">Sort By:</label>
-              <select id="sort-select" class="sort-select" aria-label="Sort catalog">
-                <option value="newest" selected>Newest Releases</option>
-                <option value="rating">Top Rated (IMDb)</option>
-                <option value="title">Title (A - Z)</option>
-              </select>
-            </div>
           </div>
+          MOO<span>VIE</span>
+        </a>
 
-          <!-- Genre Filter Chips Rail -->
-          <div class="genre-chips-rail" id="genre-chips-rail" role="tablist" aria-label="Genres">
-            <button class="genre-chip active" data-genre="all">All Genres</button>
-            <button class="genre-chip" data-genre="Action">Action</button>
-            <button class="genre-chip" data-genre="Sci-Fi">Sci-Fi</button>
-            <button class="genre-chip" data-genre="Drama">Drama</button>
-            <button class="genre-chip" data-genre="Animation">Animation</button>
-            <button class="genre-chip" data-genre="Adventure">Adventure</button>
-            <button class="genre-chip" data-genre="Thriller">Thriller</button>
-            <button class="genre-chip" data-genre="Comedy">Comedy</button>
-            <button class="genre-chip" data-genre="Fantasy">Fantasy</button>
-            <button class="genre-chip" data-genre="Crime">Crime</button>
-            <button class="genre-chip" data-genre="Mystery">Mystery</button>
-          </div>
-        </section>
-
-        <!-- Skeleton Loading State -->
-        <div id="skeleton-grid" class="content-grid hidden" aria-hidden="true">
-          <!-- 12 Shimmering Skeletons -->
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-          <div class="skeleton-card"><div class="skeleton-poster"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
-        </div>
-
-        <!-- Real Content Grid (6 columns desktop, 4 tablet, 2 mobile) -->
-        <div id="content-grid" class="content-grid">
-          <!-- Populated by high-perf DocumentFragment in main.ts -->
-        </div>
-
-        <!-- Pagination & Load More Controls -->
-        <div id="pagination-controls" class="pagination-wrap">
-          <button id="btn-load-more" class="btn-load-more hidden">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 8 12 12 14 14"></polyline>
-            </svg>
-            <span>Load More Titles</span>
-          </button>
-        </div>
-
-      </main>
-
-      <!-- Detail & Watch Modal -->
-      <div id="detail-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <!-- Rendered dynamically by Vanilla JS -->
+        <!-- Media Filter Tabs -->
+        <nav class="nav-tabs" id="media-filter-tabs">
+          <button class="nav-tab-btn active" data-filter="all">All Titles</button>
+          <button class="nav-tab-btn" data-filter="movie">Movies</button>
+          <button class="nav-tab-btn" data-filter="tv">TV Shows</button>
+          <button class="nav-tab-btn" data-filter="anime">⛩️ Anime</button>
+        </nav>
       </div>
 
-      <!-- Instant Search Modal Overlay (Ctrl+K / Cmd+K) -->
-      <div id="search-modal-backdrop" class="search-modal-backdrop" role="dialog" aria-modal="true" aria-label="Search Overlay">
-        <div class="search-box-wrap" id="search-box-wrap">
-          <div class="search-input-row">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input
-              type="text"
-              id="search-input-field"
-              class="search-input-field"
-              placeholder="Search movies, TV shows, actors, directors (e.g. Dune, Nolan, Shōgun)..."
-              autocomplete="off"
-            />
-            <button class="search-clear-btn" id="search-clear-btn" aria-label="Clear Search">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-
-          <div class="search-results-list" id="search-results-list">
-            <div class="search-empty-state">
-              Type title, cast, or genre to instantly search the CineStream catalog...
-            </div>
-          </div>
+      <!-- Quick Server Selector & Live Autocomplete Search -->
+      <div class="header-actions">
+        <!-- Global Server Quick-Selector -->
+        <div class="server-quick-select-wrap">
+          <span>Server:</span>
+          <select id="global-server-select" class="server-quick-select" title="Active Streaming Server">
+            <option value="vidsrc_me_ru" selected>VidSrc Official (vidsrcme.ru • 1080p Fast)</option>
+            <option value="vidsrc_sbs">VidSrc.sbs (Fast HLS)</option>
+            <option value="vidsrc_win">VidSrc.win (Ultra Mirror)</option>
+            <option value="vidlink_pro">VidLink Pro (JW Player)</option>
+            <option value="autoembed">AutoEmbed (Hindi & Multi-Audio)</option>
+            <option value="moviepire_alpha">Moviepire (Alpha EN+HI)</option>
+            <option value="moviepire_blaze">Moviepire (Blaze MP4)</option>
+            <option value="morencius">Morencius (Direct Stream)</option>
+            <option value="smashystream">SmashyStream (Multi-Source)</option>
+            <option value="vidsrc_cc">VidSrc.cc (v2 Mirror)</option>
+          </select>
         </div>
-      </div>
 
-      <!-- Watch Later / Bookmarks Drawer -->
-      <div id="drawer-backdrop" class="drawer-backdrop">
-        <aside class="drawer-panel" id="drawer-panel" aria-label="Watch Later Drawer">
-          <div class="drawer-header">
-            <div class="drawer-title-group">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent-cyan)" stroke="var(--accent-cyan)">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <h2 class="drawer-title">Watch Later <span id="drawer-count-badge">(0)</span></h2>
-            </div>
-            <button class="modal-close-btn" id="drawer-close-btn" style="position: static; width: 34px; height: 34px;" aria-label="Close Drawer">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
+        <!-- Search Bar with Live Autocomplete -->
+        <div class="search-box-wrap">
+          <svg class="search-icon-left" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="main-search-input" class="search-input" placeholder="Search movies, shows, anime... (Ctrl+K)" autocomplete="off" />
+          <button id="search-clear-btn" class="search-clear-btn" aria-label="Clear Search">✕</button>
 
-          <div class="drawer-content-list" id="drawer-content-list">
-            <!-- Rendered by Vanilla JS -->
-          </div>
-
-          <div class="drawer-footer">
-            <button class="btn-secondary" id="drawer-clear-btn" style="font-size: 0.8rem; padding: 0.4rem 0.85rem; min-height: 36px;">
-              Clear All
-            </button>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">Saved in local browser cache</span>
-          </div>
-        </aside>
-      </div>
-
-      <!-- Toast Feedback Notifications -->
-      <div id="toast-container" class="toast-container" aria-live="polite"></div>
-
-      <!-- Semantic Footer -->
-      <footer class="site-footer">
-        <div class="footer-inner">
-          <div class="footer-brand">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5">
-              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-              <line x1="7" y1="2" x2="7" y2="22"></line>
-              <line x1="17" y1="2" x2="17" y2="22"></line>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-            </svg>
-            <span>CineStream 4K Experience</span>
-          </div>
-
-          <div class="vanilla-speed-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>
-            <span>Vanilla HTML5 / CSS / ES6+ &bull; Stale-While-Revalidate &bull; 0ms Repeat Load</span>
-          </div>
-
-          <p style="margin: 0;">Designed for high-performance streaming & offline preservation.</p>
+          <!-- Autocomplete Dropdown -->
+          <div id="search-results-dropdown" class="search-results-dropdown"></div>
         </div>
-      </footer>
 
+        <!-- TMDB & Gateway Settings Modal Trigger -->
+        <button class="icon-btn" id="btn-open-settings" title="TMDB API & Gateway Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+
+        <!-- Watchlist Drawer Trigger -->
+        <button class="icon-btn" id="btn-open-watchlist" title="Watchlist & History">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="btn-badge" id="watchlist-badge">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dynamic Hero Spotlight Banner -->
+  <section class="hero-banner" id="hero-banner">
+    <img id="hero-backdrop-img" class="hero-backdrop" src="" alt="Hero Backdrop" />
+    <div class="hero-gradient"></div>
+    <div class="hero-content">
+      <div class="hero-meta-row" id="hero-meta-row">
+        <!-- Badges dynamically rendered -->
+      </div>
+      <h1 class="hero-title" id="hero-title">Loading Featured...</h1>
+      <p class="hero-overview" id="hero-overview"></p>
+      <div class="hero-cta-row">
+        <button class="btn-primary" id="hero-play-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Play Now
+        </button>
+        <button class="btn-secondary" id="hero-switch-server-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+          Switch Server
+        </button>
+        <button class="btn-secondary" id="hero-bookmark-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          Watch Later
+        </button>
+      </div>
     </div>
 
-    <!-- Application Script (Pure Vanilla TypeScript compiled with Vite) -->
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+    <!-- Hero Carousel Navigation Dots -->
+    <div class="hero-slider-nav" id="hero-slider-dots"></div>
+  </section>
+
+  <!-- Main Showcase Rows -->
+  <main class="main-content" id="main-content">
+    <!-- Continue Watching Row (Dynamically populated from history) -->
+    <section class="row-section" id="row-history" style="display: none;">
+      <div class="row-header">
+        <div class="row-title-group">
+          <span class="row-title-icon">🕒</span>
+          <h2 class="row-title">Continue Watching</h2>
+          <span class="row-count-badge" id="history-count">0 Titles</span>
+        </div>
+        <div class="row-nav-btns">
+          <button class="row-scroll-btn" onclick="scrollRow('track-history', -400)" aria-label="Scroll left">‹</button>
+          <button class="row-scroll-btn" onclick="scrollRow('track-history', 400)" aria-label="Scroll right">›</button>
+        </div>
+      </div>
+      <div class="cards-row-track" id="track-history"></div>
+    </section>
+
+    <!-- Trending Now Row -->
+    <section class="row-section" id="row-trending">
+      <div class="row-header">
+        <div class="row-title-group">
+          <span class="row-title-icon">🔥</span>
+          <h2 class="row-title">Trending Now</h2>
+          <span class="row-count-badge">Top Picks</span>
+        </div>
+        <div class="row-nav-btns">
+          <button class="row-scroll-btn" onclick="scrollRow('track-trending', -400)" aria-label="Scroll left">‹</button>
+          <button class="row-scroll-btn" onclick="scrollRow('track-trending', 400)" aria-label="Scroll right">›</button>
+        </div>
+      </div>
+      <div class="cards-row-track" id="track-trending"></div>
+    </section>
+
+    <!-- Popular Hindi Dubbed & Multi-Audio Row -->
+    <section class="row-section" id="row-hindi">
+      <div class="row-header">
+        <div class="row-title-group">
+          <span class="row-title-icon">🎬</span>
+          <h2 class="row-title">Popular Hindi Dubbed & Multi-Audio</h2>
+          <span class="row-count-badge">AutoEmbed Priority</span>
+        </div>
+        <div class="row-nav-btns">
+          <button class="row-scroll-btn" onclick="scrollRow('track-hindi', -400)" aria-label="Scroll left">‹</button>
+          <button class="row-scroll-btn" onclick="scrollRow('track-hindi', 400)" aria-label="Scroll right">›</button>
+        </div>
+      </div>
+      <div class="cards-row-track" id="track-hindi"></div>
+    </section>
+
+    <!-- Top Rated Masterpieces Row -->
+    <section class="row-section" id="row-toprated">
+      <div class="row-header">
+        <div class="row-title-group">
+          <span class="row-title-icon">⭐</span>
+          <h2 class="row-title">Top Rated Masterpieces</h2>
+          <span class="row-count-badge">IMDb 8.0+</span>
+        </div>
+        <div class="row-nav-btns">
+          <button class="row-scroll-btn" onclick="scrollRow('track-toprated', -400)" aria-label="Scroll left">‹</button>
+          <button class="row-scroll-btn" onclick="scrollRow('track-toprated', 400)" aria-label="Scroll right">›</button>
+        </div>
+      </div>
+      <div class="cards-row-track" id="track-toprated"></div>
+    </section>
+
+    <!-- Anime Spotlight Row (AniList API) -->
+    <section class="row-section" id="row-anime">
+      <div class="row-header">
+        <div class="row-title-group">
+          <span class="row-title-icon">⛩️</span>
+          <h2 class="row-title">Anime Spotlight (AniList)</h2>
+          <span class="row-count-badge">Moviepire Stream</span>
+        </div>
+        <div class="row-nav-btns">
+          <button class="row-scroll-btn" onclick="scrollRow('track-anime', -400)" aria-label="Scroll left">‹</button>
+          <button class="row-scroll-btn" onclick="scrollRow('track-anime', 400)" aria-label="Scroll right">›</button>
+        </div>
+      </div>
+      <div class="cards-row-track" id="track-anime"></div>
+    </section>
+
+    <!-- TV Series Binge Worthy Row -->
+    <section class="row-section" id="row-tvseries">
+      <div class="row-header">
+        <div class="row-title-group">
+          <span class="row-title-icon">📺</span>
+          <h2 class="row-title">Binge-Worthy TV Series</h2>
+          <span class="row-count-badge">Seasons & Episodes</span>
+        </div>
+        <div class="row-nav-btns">
+          <button class="row-scroll-btn" onclick="scrollRow('track-tvseries', -400)" aria-label="Scroll left">‹</button>
+          <button class="row-scroll-btn" onclick="scrollRow('track-tvseries', 400)" aria-label="Scroll right">›</button>
+        </div>
+      </div>
+      <div class="cards-row-track" id="track-tvseries"></div>
+    </section>
+  </main>
+
+  <!-- Full Video Player Floating Modal -->
+  <div class="player-modal" id="player-modal">
+    <div class="player-container">
+      <!-- Player Header Bar -->
+      <div class="player-header-bar">
+        <div class="player-title-info">
+          <span class="badge badge-quality" id="player-badge-quality">4K HDR</span>
+          <h3 class="player-title-text" id="player-title">Now Playing</h3>
+        </div>
+
+        <div class="player-header-actions">
+          <!-- Active Ad-Shield Indicator / Toggle -->
+          <button class="btn-adshield" id="btn-toggle-adshield" title="Ad-Shield active: Popups and click-hijacks suppressed">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span id="adshield-label">Ad-Shield: ON</span>
+          </button>
+          <!-- Quick Switch / Report Broken Stream Button -->
+          <button class="btn-switch-server-report" id="btn-report-switch" title="If stream is black, buffering, or blocked, click to cycle next server">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Report / Switch Server
+          </button>
+          <!-- Popout Window / Open Stream in New Tab -->
+          <button class="icon-btn" id="btn-player-popout" title="Open Stream in Dedicated Clean Tab">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </button>
+          <!-- Fullscreen Toggle -->
+          <button class="icon-btn" id="btn-player-fullscreen" title="Toggle Fullscreen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+          </button>
+          <!-- Close Modal -->
+          <button class="player-close-btn" id="btn-player-close" aria-label="Close Player">✕</button>
+        </div>
+      </div>
+
+      <!-- 16:9 Responsive Iframe Container -->
+      <div class="player-viewport-wrapper" id="player-viewport-wrapper">
+        <div class="player-loading-shimmer" id="player-shimmer">
+          <div class="spinner"></div>
+          <p style="font-size: 0.85rem; color: var(--accent-cyan);">Connecting to Secure Streaming Gateway...</p>
+        </div>
+        <iframe
+          id="active-player-iframe"
+          class="player-iframe"
+          src="about:blank"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          title="Video Stream Player"
+        ></iframe>
+      </div>
+
+      <!-- Multi-Server Switcher Bar -->
+      <div class="player-servers-bar">
+        <div class="server-chips-group">
+          <span class="server-label">Servers:</span>
+          <button class="server-chip-btn active" data-server="vidsrc_me_ru">
+            VidSrc Official <span class="server-sub-badge">vidsrcme.ru • Fast</span>
+          </button>
+          <button class="server-chip-btn" data-server="vidsrc_sbs">
+            VidSrc.sbs <span class="server-sub-badge">Fast HLS</span>
+          </button>
+          <button class="server-chip-btn" data-server="vidsrc_win">
+            VidSrc.win <span class="server-sub-badge">Ultra</span>
+          </button>
+          <button class="server-chip-btn" data-server="vidlink_pro">
+            VidLink Pro <span class="server-sub-badge">JW • Clean</span>
+          </button>
+          <button class="server-chip-btn" data-server="autoembed">
+            AutoEmbed <span class="server-sub-badge">Hindi/Multi</span>
+          </button>
+          <button class="server-chip-btn" data-server="moviepire_alpha">
+            Moviepire <span class="server-sub-badge">Alpha EN+HI</span>
+          </button>
+          <button class="server-chip-btn" data-server="moviepire_blaze">
+            Moviepire <span class="server-sub-badge">Blaze MP4</span>
+          </button>
+          <button class="server-chip-btn" data-server="morencius">
+            Morencius <span class="server-sub-badge">Stream</span>
+          </button>
+          <button class="server-chip-btn" data-server="smashystream">
+            Smashy <span class="server-sub-badge">Multi</span>
+          </button>
+          <button class="server-chip-btn" data-server="vidsrc_cc">
+            VidSrc.cc <span class="server-sub-badge">v2</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TV Shows & Anime: Season & Episode Dynamic Selectors -->
+      <div class="tv-controls-bar" id="tv-controls-bar" style="display: none;">
+        <span class="tv-picker-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+          Select Episode:
+        </span>
+        <label for="tv-season-select" style="font-size: 0.8rem; color: var(--text-muted);">Season:</label>
+        <select id="tv-season-select" class="select-dropdown"></select>
+        <label for="tv-episode-select" style="font-size: 0.8rem; color: var(--text-muted);">Episode:</label>
+        <select id="tv-episode-select" class="select-dropdown"></select>
+      </div>
+
+      <!-- Meta Info & Direct Downloads -->
+      <div class="player-details-row">
+        <img id="player-modal-thumb" class="player-thumb" src="" alt="Thumbnail" />
+        <div class="player-meta-col">
+          <div class="player-meta-badges">
+            <span class="badge badge-rating" id="player-modal-rating">★ 8.5</span>
+            <span class="badge badge-cyan" id="player-modal-type">Movie</span>
+            <span class="badge badge-genre" id="player-modal-year">2024</span>
+            <span class="badge badge-genre" id="player-modal-genre">Action</span>
+          </div>
+          <p class="player-synopsis" id="player-modal-synopsis"></p>
+          <div class="player-action-btns">
+            <!-- Direct Download Button Routing to Fallback Portals -->
+            <button class="btn-secondary" id="btn-player-download" style="font-size: 0.82rem; padding: 0.45rem 1.1rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Direct Download Links
+            </button>
+            <button class="btn-secondary" id="btn-player-bookmark" style="font-size: 0.82rem; padding: 0.45rem 1.1rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              Save to Watchlist
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings & TMDB API Key Modal Dialog -->
+  <div class="modal-dialog" id="settings-modal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <h3 class="dialog-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          API & Gateway Settings
+        </h3>
+        <button class="player-close-btn" id="btn-close-settings">✕</button>
+      </div>
+
+      <!-- VidSrc Official Gateway Domain / Custom Domain -->
+      <div class="form-group">
+        <label class="form-label" for="input-vidsrc-domain">VidSrc Domain (Official: vidsrcme.ru):</label>
+        <input type="text" id="input-vidsrc-domain" class="form-input" placeholder="vidsrcme.ru" />
+        <p class="form-help">Default is <strong>vidsrcme.ru</strong>. If you set up Cloudflare CNAME to <code>vidsrc-ip.com</code>, enter your domain here for 50% fewer ads and zero player branding.</p>
+      </div>
+
+      <!-- TMDB API Key Input (With localStorage persistence & demo fallback) -->
+      <div class="form-group">
+        <label class="form-label" for="input-tmdb-key">TMDB API Key (v3 auth):</label>
+        <input type="text" id="input-tmdb-key" class="form-input" placeholder="Leave empty for auto demo fetch mode..." />
+        <p class="form-help">Enter your personal TMDB API key or leave blank to use instant public demo fetch mode.</p>
+      </div>
+
+      <!-- Moviepire Custom Gateway Domain -->
+      <div class="form-group">
+        <label class="form-label" for="input-moviepire-domain">Moviepire Gateway Domain:</label>
+        <input type="text" id="input-moviepire-domain" class="form-input" placeholder="moviepire.net" />
+        <p class="form-help">Custom domain or proxy for Moviepire embed streaming routes.</p>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+        <button class="btn-secondary" id="btn-reset-settings">Reset Defaults</button>
+        <button class="btn-primary" id="btn-save-settings">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direct Downloads Modal -->
+  <div class="modal-dialog" id="download-modal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <h3 class="dialog-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Direct Download Portals
+        </h3>
+        <button class="player-close-btn" id="btn-close-download">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary);">Select preferred quality resolution for high-speed download or fallback mirror:</p>
+      <div style="display: flex; flex-direction: column; gap: 0.6rem;" id="download-links-list">
+        <!-- Generated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Embedded Vanilla ES6+ Application Logic -->
+  <script>
+    /**
+     * Moovie Application Core Engine (Vanilla ES6+ • Single-File Architecture)
+     * TMDB & AniList API Client • Multi-Server Gateway Resolver • LocalStorage Persistence
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. CONFIGURATION & STATE STORE
+      // =========================================================================
+      const CONFIG = {
+        tmdbBase: 'https://api.themoviedb.org/3',
+        tmdbImageBase: 'https://image.tmdb.org/t/p',
+        defaultDemoKey: '4e44d9029b1270a757cddc766a1bcb63', // Public fallback read key
+        aniListEndpoint: 'https://graphql.anilist.co',
+        defaultMoviepireDomain: 'moviepire.net'
+      };
+
+      const state = {
+        activeServer: localStorage.getItem('moovie_active_server') || 'vidsrc_me_ru',
+        vidsrcDomain: localStorage.getItem('moovie_vidsrc_domain') || 'vidsrcme.ru',
+        adShieldActive: localStorage.getItem('moovie_adshield') !== 'false',
+        tmdbKey: localStorage.getItem('moovie_tmdb_key') || '',
+        moviepireDomain: localStorage.getItem('moovie_moviepire_domain') || CONFIG.defaultMoviepireDomain,
+        activeFilter: 'all',
+        heroItems: [],
+        heroIndex: 0,
+        heroTimer: null,
+        currentItem: null,
+        currentSeason: 1,
+        currentEpisode: 1,
+        watchlist: JSON.parse(localStorage.getItem('moovie_watchlist') || '[]'),
+        history: JSON.parse(localStorage.getItem('moovie_history') || '[]')
+      };
+
+      // =========================================================================
+      // 2. EMBED SERVER RESOLVER DICTIONARY (VidSrc Official + Fast Mirrors)
+      // =========================================================================
+      const SERVER_RESOLVERS = {
+        vidsrc_me_ru: {
+          name: 'VidSrc Official (vidsrcme.ru)',
+          badge: '1080p • Multi-Sub',
+          getMovieUrl: (id, startAt, imdbId) => {
+            const domain = state.vidsrcDomain || 'vidsrcme.ru';
+            const targetId = imdbId || id;
+            let url = `https://${domain}/embed/movie/${targetId}?ds_lang=en`;
+            if (startAt && startAt > 10) url += `&startAt=${Math.floor(startAt)}`;
+            return url;
+          },
+          getTvUrl: (id, s, e, startAt, imdbId) => {
+            const domain = state.vidsrcDomain || 'vidsrcme.ru';
+            const targetId = imdbId || id;
+            let url = `https://${domain}/embed/tv/${targetId}/${s}/${e}?autonext=1&ds_lang=en`;
+            if (startAt && startAt > 10) url += `&startAt=${Math.floor(startAt)}`;
+            return url;
+          },
+          getAnimeUrl: (id, e) => {
+            const domain = state.vidsrcDomain || 'vidsrcme.ru';
+            return `https://${domain}/embed/movie/${id}?ds_lang=en`;
+          }
+        },
+        vidsrc_sbs: {
+          name: 'VidSrc.sbs',
+          badge: 'Fast HLS',
+          getMovieUrl: (id) => `https://vidsrc.sbs/embed/movie/${id}`,
+          getTvUrl: (id, s, e) => `https://vidsrc.sbs/embed/tv/${id}/${s}/${e}`,
+          getAnimeUrl: (id, e) => `https://vidsrc.sbs/embed/movie/${id}`
+        },
+        vidsrc_win: {
+          name: 'VidSrc.win',
+          badge: 'Ultra Mirror',
+          getMovieUrl: (id) => `https://vidsrc.win/watch/${id}`,
+          getTvUrl: (id, s, e) => `https://vidsrc.win/watch/${id}?s=${s}&e=${e}`,
+          getAnimeUrl: (id, e) => `https://vidsrc.win/watch/${id}`
+        },
+        vidlink_pro: {
+          name: 'VidLink Pro (JW Player)',
+          badge: 'Clean • JW Player',
+          getMovieUrl: (id, startAt) => {
+            let url = `https://vidlink.pro/movie/${id}?primaryColor=38bdf8&secondaryColor=0f172a&iconColor=38bdf8&icons=vid&player=jw&title=true&poster=true&autoplay=false&nextbutton=true`;
+            if (startAt && startAt > 10) url += `&startAt=${Math.floor(startAt)}`;
+            return url;
+          },
+          getTvUrl: (id, s, e, startAt) => {
+            let url = `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=38bdf8&secondaryColor=0f172a&iconColor=38bdf8&icons=vid&player=jw&title=true&poster=true&autoplay=false&nextbutton=true`;
+            if (startAt && startAt > 10) url += `&startAt=${Math.floor(startAt)}`;
+            return url;
+          },
+          getAnimeUrl: (malOrId, e, subOrDub = 'sub') => `https://vidlink.pro/anime/${malOrId}/${e}/${subOrDub}?primaryColor=38bdf8&secondaryColor=0f172a&iconColor=38bdf8&icons=vid&player=jw&title=true&poster=true&autoplay=false&fallback=true`
+        },
+        autoembed: {
+          name: 'AutoEmbed',
+          badge: 'Hindi & Multi-Audio',
+          getMovieUrl: (id) => `https://autoembed.cc/embed/movie/${id}`,
+          getTvUrl: (id, s, e) => `https://autoembed.cc/embed/tv/${id}/${s}/${e}`,
+          getAnimeUrl: (id, e) => `https://autoembed.cc/embed/anime/${id}/${e}`
+        },
+        moviepire_alpha: {
+          name: 'Moviepire Gateway (Alpha)',
+          badge: 'HLS EN+HI',
+          getMovieUrl: (id) => `https://${getDomain()}/embed/movie/${id}?server=alpha&color=38bdf8&download=true`,
+          getTvUrl: (id, s, e) => `https://${getDomain()}/embed/tv/${id}/${s}/${e}?server=alpha&color=38bdf8`,
+          getAnimeUrl: (id, e) => `https://${getDomain()}/stream/anime/${id}/${e}`
+        },
+        moviepire_blaze: {
+          name: 'Moviepire Gateway (Blaze)',
+          badge: 'MP4 Multi-Audio',
+          getMovieUrl: (id) => `https://${getDomain()}/embed/movie/${id}?server=blaze&color=38bdf8&download=true`,
+          getTvUrl: (id, s, e) => `https://${getDomain()}/embed/tv/${id}/${s}/${e}?server=blaze&color=38bdf8`,
+          getAnimeUrl: (id, e) => `https://${getDomain()}/stream/anime/${id}/${e}`
+        },
+        morencius: {
+          name: 'Morencius',
+          badge: 'Direct Stream',
+          getMovieUrl: (id) => `https://morencius.com/embed/${id}`,
+          getTvUrl: (id, s, e) => `https://morencius.com/embed/${id}?s=${s}&e=${e}`,
+          getAnimeUrl: (id, e) => `https://morencius.com/embed/${id}`
+        },
+        smashystream: {
+          name: 'SmashyStream',
+          badge: 'Multi-Source',
+          getMovieUrl: (id) => `https://embed.smashystream.com/playere.php?tmdb=${id}`,
+          getTvUrl: (id, s, e) => `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${s}&episode=${e}`,
+          getAnimeUrl: (id, e) => `https://embed.smashystream.com/playere.php?tmdb=${id}`
+        },
+        vidsrc_cc: {
+          name: 'VidSrc.cc',
+          badge: 'v2 Mirror',
+          getMovieUrl: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
+          getTvUrl: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
+          getAnimeUrl: (id, e) => `https://vidsrc.cc/v2/embed/movie/${id}`
+        }
+      };
+
+      const SERVER_CHAIN = [
+        'vidsrc_me_ru',
+        'vidsrc_sbs',
+        'vidsrc_win',
+        'vidlink_pro',
+        'autoembed',
+        'moviepire_alpha',
+        'moviepire_blaze',
+        'morencius',
+        'smashystream',
+        'vidsrc_cc'
+      ];
+
+      function getDomain() {
+        return state.moviepireDomain || CONFIG.defaultMoviepireDomain;
+      }
+
+      function getActiveTmdbKey() {
+        return state.tmdbKey.trim() || CONFIG.defaultDemoKey;
+      }
+
+      // =========================================================================
+      // 3. CURATED DEMO FALLBACK CATALOG (Guaranteed Zero-Fail Display)
+      // =========================================================================
+      const FALLBACK_ITEMS = [
+        {
+          id: '533535',
+          tmdbId: '533535',
+          imdb_id: 'tt6263850',
+          title: 'Deadpool & Wolverine',
+          type: 'movie',
+          year: 2024,
+          rating: 7.9,
+          overview: 'A listless Wade Wilson toils away in civilian life with his days as the morally flexible mercenary, Deadpool, behind him. But when his homeworld faces an existential threat, he must team with Wolverine.',
+          poster: 'https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/yDHYTjA3R0neEjvuBE4NXz9G8X1.jpg',
+          genre: 'Action, Comedy, Sci-Fi'
+        },
+        {
+          id: '693134',
+          tmdbId: '693134',
+          imdb_id: 'tt15239678',
+          title: 'Dune: Part Two',
+          type: 'movie',
+          year: 2024,
+          rating: 8.5,
+          overview: 'Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a path of revenge against the conspirators who destroyed his family.',
+          poster: 'https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s520bne.jpg',
+          genre: 'Sci-Fi, Adventure'
+        },
+        {
+          id: '1022789',
+          tmdbId: '1022789',
+          imdb_id: 'tt22022452',
+          title: 'Inside Out 2',
+          type: 'movie',
+          year: 2024,
+          rating: 8.1,
+          overview: 'Teenager Riley\'s mind headquarters undergoes a sudden demolition to make room for unexpected new Emotions: Anxiety, Envy, Ennui, and Embarrassment.',
+          poster: 'https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/xg27NrXi7VXCGUr7MG75UqLl6Vg.jpg',
+          genre: 'Animation, Family, Comedy'
+        },
+        {
+          id: '558449',
+          tmdbId: '558449',
+          imdb_id: 'tt9603212',
+          title: 'Gladiator II',
+          type: 'movie',
+          year: 2024,
+          rating: 7.8,
+          overview: 'Years after witnessing the death of the revered hero Maximus, Lucius must enter the Colosseum after his home is conquered by tyrannical emperors.',
+          poster: 'https://image.tmdb.org/t/p/w500/2cxhvwyEwRlysAmRH4iodkvo0z5.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/euYIwmwkmz95mnXvufEmbL69ovr.jpg',
+          genre: 'Action, Drama, History'
+        },
+        {
+          id: '872585',
+          tmdbId: '872585',
+          imdb_id: 'tt15398776',
+          title: 'Oppenheimer',
+          type: 'movie',
+          year: 2023,
+          rating: 8.9,
+          overview: 'The story of J. Robert Oppenheimer\'s role in the development of the atomic bomb during World War II.',
+          poster: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg',
+          genre: 'Biography, Drama, History'
+        },
+        {
+          id: '94997',
+          tmdbId: '94997',
+          imdb_id: 'tt11198330',
+          title: 'House of the Dragon',
+          type: 'tv',
+          year: 2024,
+          rating: 8.4,
+          overview: 'The Targaryen dynasty is at the absolute apex of its power, with more than 15 dragons under their yoke as civil war looms.',
+          poster: 'https://image.tmdb.org/t/p/w500/t9Xke5llnxrh8rEJLVxqi7Gm9x9.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/etj5CuMuamjhGjQAC0Gh7etjmwP.jpg',
+          genre: 'Drama, Action, Fantasy'
+        },
+        {
+          id: '124364',
+          tmdbId: '124364',
+          imdb_id: 'tt13818368',
+          title: 'Fighter (Hindi)',
+          type: 'movie',
+          year: 2024,
+          rating: 7.6,
+          overview: 'An aspiring young man must confront his inner demons as he trains with top Indian Air Force aviators for a deadly mission.',
+          poster: 'https://image.tmdb.org/t/p/w500/zDZowwb4ydv93hK2k0a6c6RrhWb.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/bKxiKn9pnFsP2Vf5Wv6u5rU7N7H.jpg',
+          genre: 'Action, Thriller, Hindi'
+        },
+        {
+          id: '1114513',
+          tmdbId: '1114513',
+          imdb_id: 'tt12735488',
+          title: 'Kalki 2898 AD (Hindi / Multi)',
+          type: 'movie',
+          year: 2024,
+          rating: 7.9,
+          overview: 'In a dystopian world in the post-apocalyptic city of Kasi, a modern avatar of the Hindu god Vishnu descends to protect the world from evil.',
+          poster: 'https://image.tmdb.org/t/p/w500/8d8vXJg0zF1rX97a54hLwLz8l7e.jpg',
+          backdrop: 'https://image.tmdb.org/t/p/original/k3nQ3A1P2ZkLqEwR3gN9L9o5M4d.jpg',
+          genre: 'Sci-Fi, Action, Fantasy'
+        }
+      ];
+
+      // =========================================================================
+      // 4. METADATA FETCHING: TMDB API & ANILIST API
+      // =========================================================================
+      async function fetchTmdb(endpoint, params = {}) {
+        const key = getActiveTmdbKey();
+        const queryParams = new URLSearchParams({ api_key: key, ...params });
+        const url = `${CONFIG.tmdbBase}${endpoint}?${queryParams.toString()}`;
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`TMDB HTTP ${res.status}`);
+          return await res.json();
+        } catch (err) {
+          console.warn(`TMDB fetch failed for ${endpoint}:`, err);
+          return null;
+        }
+      }
+
+      async function fetchAniListTrending() {
+        const query = `
+          query {
+            Page(page: 1, perPage: 20) {
+              media(sort: TRENDING_DESC, type: ANIME) {
+                id
+                idMal
+                title { english romaji }
+                coverImage { extraLarge large }
+                bannerImage
+                averageScore
+                description(asHtml: false)
+                genres
+                episodes
+              }
+            }
+          }
+        `;
+        try {
+          const res = await fetch(CONFIG.aniListEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ query })
+          });
+          const json = await res.json();
+          return json?.data?.Page?.media || [];
+        } catch (e) {
+          console.warn('AniList fetch error, using fallback anime:', e);
+          return [
+            {
+              id: '151807',
+              title: { english: 'Solo Leveling', romaji: 'Ore dake Level Up na Ken' },
+              coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-3bM2kHwLhBqA.jpg' },
+              averageScore: 86,
+              genres: ['Action', 'Fantasy'],
+              episodes: 12
+            },
+            {
+              id: '16498',
+              title: { english: 'Attack on Titan', romaji: 'Shingeki no Kyojin' },
+              coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-C6FPmWm59CyP.jpg' },
+              averageScore: 90,
+              genres: ['Action', 'Drama', 'Mystery'],
+              episodes: 25
+            },
+            {
+              id: '101922',
+              title: { english: 'Demon Slayer: Kimetsu no Yaiba', romaji: 'Kimetsu no Yaiba' },
+              coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-PEn1CTyeNhT3.png' },
+              averageScore: 87,
+              genres: ['Action', 'Fantasy'],
+              episodes: 26
+            }
+          ];
+        }
+      }
+
+      // =========================================================================
+      // 5. EMBED URL GENERATOR & SAVED PROGRESS RESOLVER
+      // =========================================================================
+      function getSavedWatchProgress(id, imdbId) {
+        try {
+          if (imdbId) {
+            const v = localStorage.getItem(`progress_${imdbId}`);
+            if (v && Number(v) > 0) return parseFloat(v);
+          }
+          if (id) {
+            const v = localStorage.getItem(`progress_${id}`);
+            if (v && Number(v) > 0) return parseFloat(v);
+          }
+          const stored = JSON.parse(localStorage.getItem('vidLinkProgress') || '{}');
+          if (stored && stored[id] && stored[id].progress) {
+            return stored[id].progress.watched || 0;
+          }
+        } catch (e) {}
+        const hist = state.history.find(h => (h.tmdbId || h.id) === String(id) || (imdbId && h.imdb_id === imdbId));
+        return hist?.watched || 0;
+      }
+
+      function resolveEmbedUrl(item, serverKey, season = 1, episode = 1) {
+        const resolver = SERVER_RESOLVERS[serverKey] || SERVER_RESOLVERS.vidsrc_me_ru;
+        const id = item.tmdbId || item.id;
+        const imdbId = item.imdb_id;
+        const savedProgress = getSavedWatchProgress(id, imdbId);
+
+        if (item.type === 'anime') {
+          const malOrId = item.idMal || item.anilistId || item.id;
+          return resolver.getAnimeUrl ? resolver.getAnimeUrl(malOrId, episode) : resolver.getMovieUrl(id, savedProgress, imdbId);
+        }
+
+        if (item.type === 'tv') {
+          return resolver.getTvUrl(id, season, episode, savedProgress, imdbId);
+        }
+
+        return resolver.getMovieUrl(id, savedProgress, imdbId);
+      }
+
+      // =========================================================================
+      // 6. UI BUILDERS & ROW RENDERERS
+      // =========================================================================
+      function renderMediaCard(item) {
+        const posterUrl = item.poster || `${CONFIG.tmdbImageBase}/w500${item.poster_path}` || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500';
+        const rating = item.rating || item.vote_average || (item.averageScore ? (item.averageScore / 10).toFixed(1) : 8.0);
+        const title = item.title?.english || item.title?.romaji || item.title || item.name || 'Untitled';
+        const year = item.year || (item.release_date || item.first_air_date || '').split('-')[0] || '2024';
+        const typeLabel = item.type === 'tv' ? 'TV' : (item.type === 'anime' ? 'Anime' : 'Movie');
+        const cardId = item.tmdbId || item.id;
+
+        // Check if progress is tracked in localStorage vidLinkProgress or history
+        let watchedPercent = item.watchedPercent || 0;
+        if (!watchedPercent) {
+          try {
+            const vidData = JSON.parse(localStorage.getItem('vidLinkProgress') || '{}');
+            if (vidData && vidData[cardId] && vidData[cardId].progress?.duration > 0) {
+              watchedPercent = Math.min(100, Math.round((vidData[cardId].progress.watched / vidData[cardId].progress.duration) * 100));
+            }
+          } catch (e) {}
+        }
+
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        card.dataset.id = cardId;
+        const progressHtml = watchedPercent > 0 ? `
+          <div class="card-progress-bar-wrap" title="${watchedPercent}% watched">
+            <div class="card-progress-bar-fill" style="width: ${watchedPercent}%;"></div>
+          </div>
+        ` : '';
+
+        card.innerHTML = `
+          <div class="card-poster-wrap">
+            <img src="${posterUrl}" alt="${title}" class="card-poster" loading="lazy" />
+            <div class="card-rating-badge">★ ${Number(rating).toFixed(1)}</div>
+            <div class="card-type-tag">${typeLabel}</div>
+            ${progressHtml}
+            <div class="card-hover-overlay">
+              <div class="card-play-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </div>
+            </div>
+          </div>
+          <div class="card-info">
+            <h3 class="card-title" title="${title}">${title}</h3>
+            <div class="card-meta">
+              <span>${year}</span>
+              <span>•</span>
+              <span>${item.genre || (item.genres ? item.genres[0] : 'Feature')}</span>
+            </div>
+          </div>
+        `;
+
+        card.addEventListener('click', () => openPlayerModal(item));
+        return card;
+      }
+
+      function populateRow(containerId, items) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        items.forEach(it => {
+          container.appendChild(renderMediaCard(it));
+        });
+      }
+
+      // =========================================================================
+      // 7. DYNAMIC HERO SPOTLIGHT
+      // =========================================================================
+      function setupHeroSpotlight(items) {
+        state.heroItems = items && items.length ? items : FALLBACK_ITEMS;
+        state.heroIndex = 0;
+        updateHeroView();
+
+        const dotsContainer = document.getElementById('hero-slider-dots');
+        if (dotsContainer) {
+          dotsContainer.innerHTML = '';
+          state.heroItems.slice(0, 6).forEach((_, idx) => {
+            const dot = document.createElement('div');
+            dot.className = `hero-nav-dot ${idx === 0 ? 'active' : ''}`;
+            dot.addEventListener('click', () => {
+              state.heroIndex = idx;
+              updateHeroView();
+            });
+            dotsContainer.appendChild(dot);
+          });
+        }
+
+        if (state.heroTimer) clearInterval(state.heroTimer);
+        state.heroTimer = setInterval(() => {
+          state.heroIndex = (state.heroIndex + 1) % Math.min(state.heroItems.length, 6);
+          updateHeroView();
+        }, 7000);
+      }
+
+      function updateHeroView() {
+        const item = state.heroItems[state.heroIndex];
+        if (!item) return;
+
+        const title = item.title?.english || item.title || item.name || 'Featured Title';
+        const backdropUrl = item.backdrop || (item.backdrop_path ? `${CONFIG.tmdbImageBase}/original${item.backdrop_path}` : item.poster);
+        const rating = (item.rating || item.vote_average || 8.2).toFixed(1);
+        const year = item.year || (item.release_date || item.first_air_date || '2024').split('-')[0];
+        const genre = item.genre || (item.genres ? item.genres[0] : 'Blockbuster');
+        const overview = item.overview || item.description || 'Watch full high definition movie and television stream.';
+
+        const imgElem = document.getElementById('hero-backdrop-img');
+        if (imgElem) imgElem.src = backdropUrl;
+
+        document.getElementById('hero-title').textContent = title;
+        document.getElementById('hero-overview').textContent = overview;
+
+        const metaRow = document.getElementById('hero-meta-row');
+        if (metaRow) {
+          metaRow.innerHTML = `
+            <span class="badge badge-quality">4K Ultra HD</span>
+            <span class="badge badge-rating">★ ${rating} IMDb</span>
+            <span class="badge badge-cyan">${item.type === 'tv' ? 'TV Series' : (item.type === 'anime' ? 'Anime' : 'Movie')}</span>
+            <span class="badge badge-genre">${year}</span>
+            <span class="badge badge-genre">${genre}</span>
+          `;
+        }
+
+        // Update dot states
+        document.querySelectorAll('.hero-nav-dot').forEach((dot, idx) => {
+          dot.classList.toggle('active', idx === state.heroIndex);
+        });
+
+        // CTA bindings
+        document.getElementById('hero-play-btn').onclick = () => openPlayerModal(item);
+        document.getElementById('hero-switch-server-btn').onclick = () => cycleNextServer();
+        document.getElementById('hero-bookmark-btn').onclick = () => toggleWatchlist(item);
+      }
+
+      // =========================================================================
+      // 8. PLAYER MODAL ENGINE & SERVER SWITCHER
+      // =========================================================================
+      function openPlayerModal(item) {
+        state.currentItem = item;
+        state.currentSeason = 1;
+        state.currentEpisode = 1;
+
+        const modal = document.getElementById('player-modal');
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        const title = item.title?.english || item.title || item.name || 'Now Playing';
+        document.getElementById('player-title').textContent = title;
+        document.getElementById('player-modal-thumb').src = item.poster || (item.poster_path ? `${CONFIG.tmdbImageBase}/w500${item.poster_path}` : '');
+        document.getElementById('player-modal-rating').textContent = `★ ${(item.rating || item.vote_average || 8.0).toFixed(1)}`;
+        document.getElementById('player-modal-type').textContent = item.type === 'tv' ? 'TV Series' : (item.type === 'anime' ? 'Anime' : 'Movie');
+        document.getElementById('player-modal-year').textContent = item.year || (item.release_date || item.first_air_date || '2024').split('-')[0];
+        document.getElementById('player-modal-genre').textContent = item.genre || (item.genres ? item.genres[0] : 'Cinema');
+        document.getElementById('player-modal-synopsis').textContent = item.overview || item.description || 'Full direct stream available in 1080p and 4K.';
+
+        // Setup TV Season & Episode Selectors
+        const tvBar = document.getElementById('tv-controls-bar');
+        if (item.type === 'tv' || item.type === 'anime') {
+          tvBar.style.display = 'flex';
+          buildTvSelectors(item);
+        } else {
+          tvBar.style.display = 'none';
+        }
+
+        // Highlight active server chip
+        updateServerChipsUi();
+
+        // Load stream
+        loadCurrentStream();
+
+        // Save into playback history
+        saveToHistory(item);
+      }
+
+      function buildTvSelectors(item) {
+        const sSelect = document.getElementById('tv-season-select');
+        const eSelect = document.getElementById('tv-episode-select');
+        sSelect.innerHTML = '';
+        eSelect.innerHTML = '';
+
+        const maxSeasons = item.number_of_seasons || 5;
+        for (let s = 1; s <= maxSeasons; s++) {
+          const opt = document.createElement('option');
+          opt.value = s;
+          opt.textContent = `Season ${s}`;
+          sSelect.appendChild(opt);
+        }
+
+        const maxEpisodes = item.episodes || 24;
+        for (let e = 1; e <= maxEpisodes; e++) {
+          const opt = document.createElement('option');
+          opt.value = e;
+          opt.textContent = `Episode ${e}`;
+          eSelect.appendChild(opt);
+        }
+
+        sSelect.value = state.currentSeason;
+        eSelect.value = state.currentEpisode;
+
+        sSelect.onchange = () => {
+          state.currentSeason = parseInt(sSelect.value, 10);
+          loadCurrentStream();
+        };
+
+        eSelect.onchange = () => {
+          state.currentEpisode = parseInt(eSelect.value, 10);
+          loadCurrentStream();
+        };
+      }
+
+      // =========================================================================
+      // AD-SHIELD ENGINE: ANTI-POPUP & ANTI-HIJACK PROTECTION
+      // =========================================================================
+      function updateAdShieldUi() {
+        const btn = document.getElementById('btn-toggle-adshield');
+        const label = document.getElementById('adshield-label');
+        if (!btn || !label) return;
+        if (state.adShieldActive) {
+          btn.classList.remove('disabled');
+          label.textContent = 'Ad-Shield: ON';
+          btn.title = 'Ad-Shield active: Popups, click-hijacks, and background redirects suppressed';
+        } else {
+          btn.classList.add('disabled');
+          label.textContent = 'Ad-Shield: OFF';
+          btn.title = 'Ad-Shield paused: Unrestricted popup handling';
+        }
+      }
+
+      // =========================================================================
+      // VIDSRC OFFICIAL & VIDLINK PROGRESS & PLAYER EVENT SYNCHRONIZER
+      // =========================================================================
+      function syncVidLinkData(mediaData) {
+        if (!mediaData || typeof mediaData !== 'object') return;
+        let updated = false;
+
+        state.history.forEach(item => {
+          const id = String(item.tmdbId || item.id);
+          const entry = mediaData[id];
+          if (entry && entry.progress && entry.progress.duration > 0) {
+            const percent = Math.min(100, Math.round((entry.progress.watched / entry.progress.duration) * 100));
+            item.watched = entry.progress.watched;
+            item.duration = entry.progress.duration;
+            item.watchedPercent = percent;
+            updated = true;
+          }
+        });
+
+        if (updated) {
+          localStorage.setItem('moovie_history', JSON.stringify(state.history));
+          updateHistoryRow();
+        }
+      }
+
+      function handlePlayerProgressUpdate(id, currentTime, duration) {
+        if (!state.currentItem || duration <= 0) return;
+        const currentId = String(state.currentItem.tmdbId || state.currentItem.id);
+        const currentImdb = state.currentItem.imdb_id;
+        if (id && String(id) !== currentId && id !== currentImdb) return;
+
+        const percent = Math.min(100, Math.round((currentTime / duration) * 100));
+        state.currentItem.watched = currentTime;
+        state.currentItem.duration = duration;
+        state.currentItem.watchedPercent = percent;
+
+        // Persist in history array
+        const histItem = state.history.find(h => String(h.tmdbId || h.id) === currentId || (currentImdb && h.imdb_id === currentImdb));
+        if (histItem) {
+          histItem.watched = currentTime;
+          histItem.duration = duration;
+          histItem.watchedPercent = percent;
+          localStorage.setItem('moovie_history', JSON.stringify(state.history));
+
+          // Dynamically update card progress fill if visible on screen
+          const card = document.querySelector(`.media-card[data-id="${currentId}"]`);
+          if (card) {
+            let fill = card.querySelector('.card-progress-bar-fill');
+            if (fill) {
+              fill.style.width = `${percent}%`;
+            } else {
+              const posterWrap = card.querySelector('.card-poster-wrap');
+              if (posterWrap) {
+                const wrap = document.createElement('div');
+                wrap.className = 'card-progress-bar-wrap';
+                wrap.innerHTML = `<div class="card-progress-bar-fill" style="width: ${percent}%;"></div>`;
+                posterWrap.appendChild(wrap);
+              }
+            }
+          }
+        }
+      }
+
+      function loadCurrentStream() {
+        if (!state.currentItem) return;
+        const shimmer = document.getElementById('player-shimmer');
+        const iframe = document.getElementById('active-player-iframe');
+
+        shimmer.classList.remove('hidden');
+
+        // IMPORTANT: Ensure no sandbox is placed on active iframe so video decoding and cross-origin HLS work properly
+        iframe.removeAttribute('sandbox');
+        iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+        iframe.setAttribute('allowfullscreen', 'true');
+        iframe.setAttribute('frameborder', '0');
+
+        const embedUrl = resolveEmbedUrl(state.currentItem, state.activeServer, state.currentSeason, state.currentEpisode);
+        iframe.src = embedUrl;
+
+        iframe.onload = () => {
+          shimmer.classList.add('hidden');
+        };
+
+        // Fallback auto-hide shimmer after 1.5s
+        setTimeout(() => {
+          shimmer.classList.add('hidden');
+        }, 1500);
+      }
+
+      function closePlayerModal() {
+        const modal = document.getElementById('player-modal');
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+        const iframe = document.getElementById('active-player-iframe');
+        iframe.src = 'about:blank';
+      }
+
+      function updateServerChipsUi() {
+        document.querySelectorAll('.server-chip-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.server === state.activeServer);
+        });
+        const selectElem = document.getElementById('global-server-select');
+        if (selectElem) selectElem.value = state.activeServer;
+      }
+
+      function cycleNextServer() {
+        const curIdx = SERVER_CHAIN.indexOf(state.activeServer);
+        const nextIdx = (curIdx + 1) % SERVER_CHAIN.length;
+        const nextServer = SERVER_CHAIN[nextIdx];
+        state.activeServer = nextServer;
+        localStorage.setItem('moovie_active_server', nextServer);
+
+        updateServerChipsUi();
+        showToast(`Switched server to ${SERVER_RESOLVERS[nextServer].name}`);
+
+        if (state.currentItem) {
+          loadCurrentStream();
+        }
+      }
+
+      // =========================================================================
+      // 9. LIVE SEARCH & AUTOCOMPLETE
+      // =========================================================================
+      function setupLiveSearch() {
+        const input = document.getElementById('main-search-input');
+        const dropdown = document.getElementById('search-results-dropdown');
+        const clearBtn = document.getElementById('search-clear-btn');
+        let debounceTimer = null;
+
+        input.addEventListener('input', () => {
+          const q = input.value.trim();
+          clearBtn.style.display = q ? 'block' : 'none';
+
+          clearTimeout(debounceTimer);
+          if (!q) {
+            dropdown.classList.remove('open');
+            return;
+          }
+
+          debounceTimer = setTimeout(async () => {
+            const data = await fetchTmdb('/search/multi', { query: q });
+            const results = (data?.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv' || r.poster_path);
+
+            if (!results.length) {
+              // Local search fallback
+              const localMatches = FALLBACK_ITEMS.filter(it => it.title.toLowerCase().includes(q.toLowerCase()));
+              renderSearchResults(localMatches);
+            } else {
+              renderSearchResults(results);
+            }
+          }, 250);
+        });
+
+        clearBtn.addEventListener('click', () => {
+          input.value = '';
+          clearBtn.style.display = 'none';
+          dropdown.classList.remove('open');
+          input.focus();
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            input.focus();
+            input.select();
+          } else if (e.key === 'Escape') {
+            dropdown.classList.remove('open');
+            closePlayerModal();
+            closeDialogs();
+          }
+        });
+
+        // Close search when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.search-box-wrap')) {
+            dropdown.classList.remove('open');
+          }
+        });
+      }
+
+      function renderSearchResults(results) {
+        const dropdown = document.getElementById('search-results-dropdown');
+        if (!results.length) {
+          dropdown.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No matching titles found</div>';
+          dropdown.classList.add('open');
+          return;
+        }
+
+        dropdown.innerHTML = results.slice(0, 8).map(it => {
+          const poster = it.poster || (it.poster_path ? `${CONFIG.tmdbImageBase}/w200${it.poster_path}` : '');
+          const title = it.title || it.name || 'Unknown';
+          const year = (it.release_date || it.first_air_date || '2024').split('-')[0];
+          const rating = (it.vote_average || it.rating || 7.5).toFixed(1);
+          const type = it.media_type || it.type || 'movie';
+
+          return `
+            <div class="search-result-item" data-id="${it.id}">
+              <img src="${poster}" alt="${title}" class="search-item-thumb" />
+              <div class="search-item-info">
+                <div class="search-item-title">${title}</div>
+                <div class="search-item-meta">
+                  <span>${year}</span>
+                  <span>•</span>
+                  <span style="color: var(--rating-amber);">★ ${rating}</span>
+                  <span>•</span>
+                  <span>${type.toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        dropdown.classList.add('open');
+
+        dropdown.querySelectorAll('.search-result-item').forEach((elem, idx) => {
+          elem.addEventListener('click', () => {
+            const chosen = results[idx];
+            dropdown.classList.remove('open');
+            openPlayerModal({
+              ...chosen,
+              type: chosen.media_type || chosen.type || 'movie',
+              tmdbId: String(chosen.id)
+            });
+          });
+        });
+      }
+
+      // =========================================================================
+      // 10. PERSISTENCE: WATCHLIST & PLAYBACK HISTORY
+      // =========================================================================
+      function saveToHistory(item) {
+        const id = item.tmdbId || item.id;
+        state.history = state.history.filter(h => (h.tmdbId || h.id) !== id);
+        state.history.unshift(item);
+        if (state.history.length > 20) state.history.pop();
+        localStorage.setItem('moovie_history', JSON.stringify(state.history));
+        updateHistoryRow();
+      }
+
+      function updateHistoryRow() {
+        const rowSection = document.getElementById('row-history');
+        if (!state.history.length) {
+          rowSection.style.display = 'none';
+          return;
+        }
+        rowSection.style.display = 'block';
+        document.getElementById('history-count').textContent = `${state.history.length} Titles`;
+        populateRow('track-history', state.history);
+      }
+
+      function toggleWatchlist(item) {
+        const id = item.tmdbId || item.id;
+        const exists = state.watchlist.some(w => (w.tmdbId || w.id) === id);
+        if (exists) {
+          state.watchlist = state.watchlist.filter(w => (w.tmdbId || w.id) !== id);
+          showToast(`Removed "${item.title || item.name}" from Watchlist`);
+        } else {
+          state.watchlist.unshift(item);
+          showToast(`Saved "${item.title || item.name}" to Watchlist`);
+        }
+        localStorage.setItem('moovie_watchlist', JSON.stringify(state.watchlist));
+        updateWatchlistBadge();
+      }
+
+      function updateWatchlistBadge() {
+        const badge = document.getElementById('watchlist-badge');
+        if (badge) badge.textContent = state.watchlist.length;
+      }
+
+      // =========================================================================
+      // 11. DOWNLOAD PORTAL MODAL GENERATOR
+      // =========================================================================
+      function openDownloadModal(item) {
+        const modal = document.getElementById('download-modal');
+        const list = document.getElementById('download-links-list');
+        const id = item.tmdbId || item.id;
+        const title = item.title || item.name || 'Movie';
+
+        list.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div>
+              <strong>4K Ultra HD (2160p HEVC)</strong>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">6.4 GB • Multi-Language Audio • HDR10</div>
+            </div>
+            <a href="https://${getDomain()}/download/movie/${id}?q=4k" target="_blank" rel="noopener noreferrer" class="btn-primary" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; text-decoration: none;">Download 4K</a>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div>
+              <strong>Full HD (1080p WebRip)</strong>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">2.1 GB • English + Hindi Audio Pack</div>
+            </div>
+            <a href="https://${getDomain()}/download/movie/${id}?q=1080" target="_blank" rel="noopener noreferrer" class="btn-primary" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; text-decoration: none;">Download 1080p</a>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div>
+              <strong>High Definition (720p Mobile Fast)</strong>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">980 MB • Optimized for Mobile Devices</div>
+            </div>
+            <a href="https://dl.vidsrc.vip/movie/${id}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; text-decoration: none;">Download 720p</a>
+          </div>
+        `;
+
+        modal.classList.add('open');
+      }
+
+      // =========================================================================
+      // 12. UTILITY & TOAST NOTIFICATIONS
+      // =========================================================================
+      function showToast(msg) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = 'toast-item';
+        toast.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>${msg}</span>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.remove();
+        }, 3200);
+      }
+
+      function closeDialogs() {
+        document.querySelectorAll('.modal-dialog').forEach(d => d.classList.remove('open'));
+      }
+
+      window.scrollRow = function (trackId, amount) {
+        const track = document.getElementById(trackId);
+        if (track) track.scrollBy({ left: amount, behavior: 'smooth' });
+      };
+
+      // =========================================================================
+      // 13. INITIALIZATION CONTROLLER
+      // =========================================================================
+      async function initApp() {
+        // Setup Header Filter Tabs
+        const filterTabs = document.querySelectorAll('#media-filter-tabs .nav-tab-btn');
+        filterTabs.forEach(btn => {
+          btn.addEventListener('click', () => {
+            filterTabs.forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            state.activeFilter = btn.dataset.filter;
+
+            document.getElementById('row-trending').style.display = (state.activeFilter === 'all' || state.activeFilter === 'movie') ? 'block' : 'none';
+            document.getElementById('row-hindi').style.display = (state.activeFilter === 'all' || state.activeFilter === 'movie') ? 'block' : 'none';
+            document.getElementById('row-toprated').style.display = (state.activeFilter === 'all' || state.activeFilter === 'movie') ? 'block' : 'none';
+            document.getElementById('row-anime').style.display = (state.activeFilter === 'all' || state.activeFilter === 'anime') ? 'block' : 'none';
+            document.getElementById('row-tvseries').style.display = (state.activeFilter === 'all' || state.activeFilter === 'tv') ? 'block' : 'none';
+          });
+        });
+
+        // Global Server Quick-Selector Listener
+        const serverSelect = document.getElementById('global-server-select');
+        serverSelect.value = state.activeServer;
+        serverSelect.addEventListener('change', () => {
+          state.activeServer = serverSelect.value;
+          localStorage.setItem('moovie_active_server', state.activeServer);
+          updateServerChipsUi();
+          showToast(`Default server set to ${SERVER_RESOLVERS[state.activeServer].name}`);
+        });
+
+        // Server Chips In Player Bar Listener
+        document.querySelectorAll('.server-chip-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.activeServer = btn.dataset.server;
+            localStorage.setItem('moovie_active_server', state.activeServer);
+            updateServerChipsUi();
+            loadCurrentStream();
+            showToast(`Streaming from ${SERVER_RESOLVERS[state.activeServer].name}`);
+          });
+        });
+
+        // Player UI Controls
+        document.getElementById('btn-report-switch').onclick = () => cycleNextServer();
+        document.getElementById('btn-player-close').onclick = () => closePlayerModal();
+        document.getElementById('player-modal').onclick = (e) => {
+          if (e.target.id === 'player-modal') closePlayerModal();
+        };
+
+        // Ad-Shield Toggle Control
+        updateAdShieldUi();
+        const adShieldBtn = document.getElementById('btn-toggle-adshield');
+        if (adShieldBtn) {
+          adShieldBtn.onclick = () => {
+            state.adShieldActive = !state.adShieldActive;
+            localStorage.setItem('moovie_adshield', state.adShieldActive ? 'true' : 'false');
+            updateAdShieldUi();
+            showToast(state.adShieldActive ? '🛡️ Ad-Shield ON: Popups & hijack redirects suppressed' : '⚠️ Ad-Shield OFF: Permissive mode');
+          };
+        }
+
+        // Popout Stream in dedicated window
+        let _allowNextPopout = false;
+        const popoutBtn = document.getElementById('btn-player-popout');
+        if (popoutBtn) {
+          popoutBtn.onclick = () => {
+            if (!state.currentItem) return;
+            const embedUrl = resolveEmbedUrl(state.currentItem, state.activeServer, state.currentSeason, state.currentEpisode);
+            _allowNextPopout = true;
+            window.open(embedUrl, '_blank', 'noopener,noreferrer');
+            _allowNextPopout = false;
+            showToast('Opening stream in dedicated window...');
+          };
+        }
+
+        // Global Anti-Hijack & Popup Interceptor (protects against ad tabs, popunders, and click-hijacks without triggering sandbox detection)
+        const _originalWindowOpen = window.open;
+        window.open = function (url, target, features) {
+          if (_allowNextPopout) {
+            return _originalWindowOpen.call(window, url, target, features);
+          }
+          if (state.adShieldActive) {
+            // Check if URL is internal or explicitly allowed
+            const isLocal = url && typeof url === 'string' && (url.startsWith('/') || url.includes(window.location.host) || url.includes('blob:'));
+            if (!isLocal) {
+              console.warn('[Ad-Shield] Prevented advertising popup to:', url);
+              showToast('🛡️ Ad-Shield blocked an advertising popup');
+              return null;
+            }
+          }
+          return _originalWindowOpen.call(window, url, target, features);
+        };
+
+        // Anti-Popunder & Defocus Defense:
+        // When clicking inside iframe video player, ad networks try to blur the parent to open behind.
+        // We detect this and immediately bring focus back to the parent app.
+        window.addEventListener('blur', () => {
+          if (state.adShieldActive) {
+            const modal = document.getElementById('player-modal');
+            if (modal && modal.classList.contains('open')) {
+              setTimeout(() => {
+                window.focus();
+              }, 80);
+            }
+          }
+        });
+
+        // VidSrc Official (vidsrcme.ru) & VidLink Pro Message Listener
+        window.addEventListener('message', (event) => {
+          // 1. VidSrc Official Format: { type: "PLAYER_EVENT", data: { player_info, player_status, player_progress, player_duration } }
+          if (event.data?.type === 'PLAYER_EVENT' && event.data.data?.player_info) {
+            const { player_info, player_status, player_progress, player_duration } = event.data.data;
+            const id = player_info.tmdb || player_info.imdb;
+            
+            if (id && player_progress) {
+              if (player_info.imdb) localStorage.setItem(`progress_${player_info.imdb}`, player_progress);
+              if (player_info.tmdb) localStorage.setItem(`progress_${player_info.tmdb}`, player_progress);
+              handlePlayerProgressUpdate(id, player_progress, player_duration || 0);
+            }
+
+            // Auto-advance episode on completion
+            if (player_status === 'completed' && player_info.mediaType === 'tv') {
+              const currentEp = parseInt(player_info.episode || state.currentEpisode, 10);
+              const nextEp = currentEp + 1;
+              const eSelect = document.getElementById('tv-episode-select');
+              if (eSelect && eSelect.querySelector(`option[value="${nextEp}"]`)) {
+                state.currentEpisode = nextEp;
+                eSelect.value = nextEp;
+                showToast(`Auto-Playing Next: Episode ${nextEp}`);
+                loadCurrentStream();
+              }
+            }
+            return;
+          }
+
+          // 2. VidLink Pro Format
+          if (event.origin === 'https://vidlink.pro') {
+            if (event.data?.type === 'MEDIA_DATA') {
+              const mediaData = event.data.data;
+              try {
+                localStorage.setItem('vidLinkProgress', JSON.stringify(mediaData));
+                syncVidLinkData(mediaData);
+              } catch (err) {}
+            }
+
+            if (event.data?.type === 'PLAYER_EVENT') {
+              const { event: eventType, currentTime, duration, mtmdbId } = event.data.data || {};
+              handlePlayerProgressUpdate(mtmdbId, currentTime, duration);
+            }
+          }
+        });
+
+        document.getElementById('btn-player-fullscreen').onclick = () => {
+          const wrapper = document.getElementById('player-viewport-wrapper');
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          } else if (wrapper.requestFullscreen) {
+            wrapper.requestFullscreen();
+          }
+        };
+
+        document.getElementById('btn-player-download').onclick = () => {
+          if (state.currentItem) openDownloadModal(state.currentItem);
+        };
+
+        document.getElementById('btn-player-bookmark').onclick = () => {
+          if (state.currentItem) toggleWatchlist(state.currentItem);
+        };
+
+        document.getElementById('btn-close-download').onclick = () => {
+          document.getElementById('download-modal').classList.remove('open');
+        };
+
+        // Settings Dialog Handlers
+        const settingsModal = document.getElementById('settings-modal');
+        document.getElementById('btn-open-settings').onclick = () => {
+          document.getElementById('input-vidsrc-domain').value = state.vidsrcDomain;
+          document.getElementById('input-tmdb-key').value = state.tmdbKey;
+          document.getElementById('input-moviepire-domain').value = state.moviepireDomain;
+          settingsModal.classList.add('open');
+        };
+
+        document.getElementById('btn-close-settings').onclick = () => settingsModal.classList.remove('open');
+
+        document.getElementById('btn-save-settings').onclick = () => {
+          state.vidsrcDomain = document.getElementById('input-vidsrc-domain').value.trim() || 'vidsrcme.ru';
+          state.tmdbKey = document.getElementById('input-tmdb-key').value.trim();
+          state.moviepireDomain = document.getElementById('input-moviepire-domain').value.trim() || CONFIG.defaultMoviepireDomain;
+          localStorage.setItem('moovie_vidsrc_domain', state.vidsrcDomain);
+          localStorage.setItem('moovie_tmdb_key', state.tmdbKey);
+          localStorage.setItem('moovie_moviepire_domain', state.moviepireDomain);
+          settingsModal.classList.remove('open');
+          showToast('Configuration settings updated successfully!');
+          refreshCatalog();
+        };
+
+        document.getElementById('btn-reset-settings').onclick = () => {
+          state.vidsrcDomain = 'vidsrcme.ru';
+          state.tmdbKey = '';
+          state.moviepireDomain = CONFIG.defaultMoviepireDomain;
+          localStorage.removeItem('moovie_vidsrc_domain');
+          localStorage.removeItem('moovie_tmdb_key');
+          localStorage.removeItem('moovie_moviepire_domain');
+          document.getElementById('input-vidsrc-domain').value = 'vidsrcme.ru';
+          document.getElementById('input-tmdb-key').value = '';
+          document.getElementById('input-moviepire-domain').value = CONFIG.defaultMoviepireDomain;
+          settingsModal.classList.remove('open');
+          showToast('Settings reset to defaults.');
+          refreshCatalog();
+        };
+
+        // Watchlist Drawer
+        document.getElementById('btn-open-watchlist').onclick = () => {
+          if (!state.watchlist.length) {
+            showToast('Your Watchlist is currently empty. Click "Watch Later" on any title!');
+            return;
+          }
+          populateRow('track-history', state.watchlist);
+          document.getElementById('row-history').style.display = 'block';
+          document.getElementById('row-history').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // Live Search Setup
+        setupLiveSearch();
+
+        // Initial Data Fetching
+        updateWatchlistBadge();
+        updateHistoryRow();
+        await refreshCatalog();
+      }
+
+      async function refreshCatalog() {
+        // 1. Fetch Trending TMDB Titles
+        const trendingData = await fetchTmdb('/trending/all/day');
+        const trendingItems = trendingData?.results?.map(r => ({
+          ...r,
+          type: r.media_type || (r.first_air_date ? 'tv' : 'movie'),
+          tmdbId: String(r.id)
+        })) || FALLBACK_ITEMS;
+
+        setupHeroSpotlight(trendingItems);
+        populateRow('track-trending', trendingItems);
+
+        // 2. Fetch Popular Hindi Titles (Multi-Audio Priority)
+        const hindiData = await fetchTmdb('/discover/movie', { with_original_language: 'hi', sort_by: 'popularity.desc' });
+        const hindiItems = hindiData?.results?.map(r => ({ ...r, type: 'movie', tmdbId: String(r.id) })) || FALLBACK_ITEMS.filter(it => it.genre.includes('Hindi'));
+        populateRow('track-hindi', hindiItems);
+
+        // 3. Fetch Top Rated
+        const topRatedData = await fetchTmdb('/movie/top_rated');
+        const topRatedItems = topRatedData?.results?.map(r => ({ ...r, type: 'movie', tmdbId: String(r.id) })) || FALLBACK_ITEMS;
+        populateRow('track-toprated', topRatedItems);
+
+        // 4. Fetch Anime from AniList
+        const animeData = await fetchAniListTrending();
+        const animeItems = animeData.map(a => ({
+          id: String(a.id),
+          anilistId: String(a.id),
+          idMal: a.idMal ? String(a.idMal) : String(a.id),
+          title: a.title.english || a.title.romaji,
+          poster: a.coverImage.extraLarge || a.coverImage.large,
+          rating: a.averageScore ? (a.averageScore / 10) : 8.5,
+          type: 'anime',
+          genres: a.genres || ['Anime', 'Action'],
+          overview: a.description || 'Watch full anime series and episodes.'
+        }));
+        populateRow('track-anime', animeItems);
+
+        // 5. Fetch Popular TV Shows
+        const tvData = await fetchTmdb('/discover/tv', { sort_by: 'popularity.desc' });
+        const tvItems = tvData?.results?.map(r => ({ ...r, type: 'tv', tmdbId: String(r.id) })) || FALLBACK_ITEMS.filter(it => it.type === 'tv');
+        populateRow('track-tvseries', tvItems);
+      }
+
+      // Boot application on DOM load
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+      } else {
+        initApp();
+      }
+    })();
+  </script>
+</body>
 </html>
